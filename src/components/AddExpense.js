@@ -46,6 +46,8 @@ export default function AddExpense({ onAdd }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.card }]}>
+
+      {/* amount input */}
       <TextInput
         style={[
           styles.input,
@@ -58,6 +60,7 @@ export default function AddExpense({ onAdd }) {
         onChangeText={setAmount}
       />
 
+      {/* category selector */}
       <View
         style={[styles.pickerWrapper, { backgroundColor: theme.background }]}
       >
@@ -76,6 +79,7 @@ export default function AddExpense({ onAdd }) {
         </Picker>
       </View>
 
+      {/* description input */}
       <TextInput
         style={[
           styles.input,
@@ -85,8 +89,9 @@ export default function AddExpense({ onAdd }) {
         placeholderTextColor={theme.text2}
         value={description}
         onChangeText={setDescription}
-      />
+        />
 
+      {/* date input */}
       <TouchableOpacity
         activeOpacity={0.5}
         onPress={() => setShowDatePicker(true)}
@@ -104,6 +109,7 @@ export default function AddExpense({ onAdd }) {
         />
       </TouchableOpacity>
 
+      {/* modal to get input date */}
       <DateTimePickerModal
         isVisible={showDatePicker}
         mode="date"
@@ -149,7 +155,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 5,
     paddingBottom: 4,
-    height: 50, // Ensures equal height with the TextInputs
+    minHeight: 50, // Ensures equal height with the TextInputs
     justifyContent: "center",
     overflow: "hidden",
   },
