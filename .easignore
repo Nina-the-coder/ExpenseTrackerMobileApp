@@ -1,0 +1,40 @@
+# Node modules (will be reinstalled on the build server)
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Git
+.git
+.gitignore
+
+# Expo
+.expo
+.expo-shared
+web-build
+
+# macOS / Windows system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Images / videos / other assets not used in the app
+C:/
+
+**/Downloads/**
+**/AppData/**
+**/Local/**
+**/Desktop/**
+**/Documents/**
+
+
+# Build outputs (to avoid recursive uploads)
+android
+ios
+build
+dist
+
