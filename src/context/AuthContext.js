@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useState } from "react";
-import { getToken, logout } from "../utils/authService";
+import { getStoredUser, getToken, logout } from "../utils/authService";
 
 export const AuthContext = createContext();
 
@@ -10,7 +10,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadUser = async () => {
       const token = await getToken();
-      if (token) setUser({ token }); // Simplified; can decode JWT if needed
+      const storedUser = await getStoredUser(); // ✅ Get the stored user object
+      if (token && storedUser) {
+        // 🚀 FIX: Merge the stored user data (containing the ID) with the token
+        setUser({ ...storedUser, token });
+      }
       setLoading(false);
     };
     loadUser();

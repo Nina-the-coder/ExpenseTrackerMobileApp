@@ -7,6 +7,7 @@ import {
   Text,
   useColorScheme,
 } from "react-native";
+import 'react-native-get-random-values';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Picker } from "@react-native-picker/picker";
 import { v4 as uuidv4 } from "uuid";
@@ -25,10 +26,10 @@ export default function AddExpense({ onAdd }) {
     if (!amount || Number(amount) <= 0) return alert("Invalid amount");
 
     const newExpense = {
-      id: uuidv4(),
+      // id: uuidv4(),
       amount: Number(amount),
       category,
-      description,
+      description: description || "NA",
       date: date.toISOString(),
     };
 

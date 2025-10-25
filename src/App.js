@@ -2,6 +2,7 @@ import { ThemeProvider, useTheme } from "./utils/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import AppNavigator from "./navigation/AppNavigator";
 import { ExpenseProvider } from "./context/expenseContext";
+import 'react-native-get-random-values';
 
 export default function App() {
   return (

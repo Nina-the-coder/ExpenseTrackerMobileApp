@@ -8,7 +8,7 @@ export default function ExpenseItem({ expense, onDelete }) {
   const renderRightActions = () => (
     <TouchableOpacity
       style={styles.deleteButton}
-      onPress={() => onDelete(expense.id)}
+      onPress={() => onDelete(expense._id)}
     >
       <Text style={styles.deleteText}>Delete</Text>
     </TouchableOpacity>

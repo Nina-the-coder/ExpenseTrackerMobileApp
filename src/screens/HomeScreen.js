@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { use, useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -18,13 +18,16 @@ import ToggleTheme from "../components/ToggleTheme";
 import { useTheme } from "../utils/ThemeContext";
 import { loadExpenses, saveExpenses } from "../utils/storage";
 import AddExpense from "../components/AddExpense";
-import { getExpenses } from "../utils/expenseService";
-import { getToken } from "../utils/authService";
+import { ExpenseContext } from "../context/expenseContext";
 
 export default function HomeScreen() {
   const { logoutUser } = useContext(AuthContext);
+  const { expenses, loadExpenses, addNewExpense, removeExpense } =
+    useContext(ExpenseContext);
   const { theme } = useTheme();
-  const [expenses, setExpenses] = useState([]);
+  const { user } = useContext(AuthContext);
+  const userId = user ? user._id || user.id : null; // Assuming your user object stores the ID as 'id' or '_id'
+  //   const [expenses, setExpenses] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const categories = ["Food", "Transport", "Shopping", "Bills", "Other"];
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -56,23 +59,33 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      const stored = await loadExpenses();
-      //   const stored = getExpenses(getToken());
-      setExpenses(stored);
+      await loadExpenses();
     })();
   }, []);
 
   const handleAdd = async (expense) => {
-    const updated = [expense, ...expenses];
-    setExpenses(updated);
-    await saveExpenses(updated);
-    setShowForm(false);
+    if (!userId) {
+      console.error("User ID is missing. Cannot add expense.");
+      return;
+    }
+    const expenseWithUser = { ...expense, user: userId };
+    try {
+      await addNewExpense(expenseWithUser);
+      setShowForm(false);
+      await loadExpenses();
+    } catch (error) {
+      console.log("Error adding expense:", error);
+      console.error("Failed to add expense:", error.message);
+    }
   };
 
   const handleDelete = async (id) => {
-    const updated = expenses.filter((e) => e.id !== id);
-    setExpenses(updated);
-    await saveExpenses(updated);
+    try {
+      await removeExpense(id);
+      await loadExpenses();
+    } catch (error) {
+      console.error("Failed to delete expense:", error.message);
+    }
   };
 
   return (
@@ -80,6 +93,7 @@ export default function HomeScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: theme.background }]}
       >
+        {/* theme toggle button */}
         <ToggleTheme />
 
         {/* logout button */}
@@ -147,13 +161,13 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     width: "30%",
+    maxHeight: 40,
     backgroundColor: "#ff4444",
     padding: 10,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
-    height: 40,
     marginBottom: 10,
     marginHorizontal: "auto",
   },

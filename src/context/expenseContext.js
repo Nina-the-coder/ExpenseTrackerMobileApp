@@ -1,11 +1,16 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { AuthContext } from "./AuthContext";
-import { getExpenses, addExpense, deleteExpense } from "../utils/expenseService";
+import {
+  getExpenses,
+  addExpense,
+  deleteExpense,
+} from "../utils/expenseService";
 
 export const ExpenseContext = createContext();
 
 export const ExpenseProvider = ({ children }) => {
-  const { user, token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
+  const token = user ? user.token : null;
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -25,12 +30,23 @@ export const ExpenseProvider = ({ children }) => {
   };
 
   const addNewExpense = async (expense) => {
-    const newExp = await addExpense(token, expense);
-    setExpenses((prev) => [newExp, ...prev]);
+    // Guard to prevent service call if token is missing
+    if (!token) throw new Error("Authentication token is missing.");
+
+    try {
+      // Your existing logic here, ensuring 'token' is passed to the service function
+      const newExp = await addExpense(token, expense);
+      setExpenses((prev) => [newExp, ...prev]); // ... update state
+    } catch (error) {
+      // ...
+    }
   };
 
   const removeExpense = async (id) => {
-    const success = await deleteExpense(token, id);
+    const cleanId = String(id)
+      .replace(/['":\s]/g, "")
+      .trim();
+    const success = await deleteExpense(token, cleanId);
     if (success) setExpenses((prev) => prev.filter((e) => e._id !== id));
   };
 
