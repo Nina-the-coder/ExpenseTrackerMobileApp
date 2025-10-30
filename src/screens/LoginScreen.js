@@ -1,5 +1,11 @@
 import React, { useState, useContext } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { login } from "../utils/authService";
 import { AuthContext } from "../context/AuthContext";
 
@@ -21,8 +27,19 @@ export default function LoginScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
-      <TextInput placeholder="Email" style={styles.input} value={email} onChangeText={setEmail} />
-      <TextInput placeholder="Password" style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
+      <TextInput
+        placeholder="Email"
+        style={styles.input}
+        value={email}
+        onChangeText={setEmail}
+      />
+      <TextInput
+        placeholder="Password"
+        style={styles.input}
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <TouchableOpacity onPress={handleLogin} style={styles.btn}>
         <Text style={styles.btnText}>Login</Text>
@@ -37,8 +54,19 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20 },
   title: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
-  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, marginBottom: 10 },
-  btn: { backgroundColor: "#1e90ff", padding: 12, borderRadius: 8, alignItems: "center" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  btn: {
+    backgroundColor: "#1e90ff",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
   btnText: { color: "#fff", fontWeight: "bold" },
   link: { marginTop: 10, textAlign: "center", color: "#1e90ff" },
   error: { color: "red", marginBottom: 10 },

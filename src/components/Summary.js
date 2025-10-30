@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../utils/ThemeContext';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Summary({ expenses }) {
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -9,8 +9,8 @@ export default function Summary({ expenses }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.summaryCard }]}>
       {/* <Text style={styles.heading}>Summary</Text> */}
-      <Text style={[styles.total, {color: theme.text}]}>Total: ₹{total}</Text>
-      <Text style={{color: theme.text}}>Items: {expenses.length}</Text>
+      <Text style={[styles.total, { color: theme.text }]}>Total: ₹{total}</Text>
+      <Text style={{ color: theme.text }}>Items: {expenses.length}</Text>
     </View>
   );
 }
@@ -18,7 +18,7 @@ export default function Summary({ expenses }) {
 const styles = StyleSheet.create({
   heading: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -30,6 +30,6 @@ const styles = StyleSheet.create({
   },
   total: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

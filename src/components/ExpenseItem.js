@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { FontAwesome5 } from "@expo/vector-icons";
-import { useTheme } from "../utils/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ExpenseItem({ expense, onDelete }) {
   const renderRightActions = () => (
@@ -33,8 +33,12 @@ export default function ExpenseItem({ expense, onDelete }) {
       <View style={[styles.card, { backgroundColor: useTheme().theme.card }]}>
         {/* Top Row: Amount and Date */}
         <View style={styles.topRow}>
-          <Text style={[styles.amount, {color: useTheme().theme.text}]}>₹{expense.amount}</Text>
-          <Text style={[styles.date, {color: useTheme().theme.text2}]}>{formattedDate}</Text>
+          <Text style={[styles.amount, { color: useTheme().theme.text }]}>
+            ₹{expense.amount}
+          </Text>
+          <Text style={[styles.date, { color: useTheme().theme.text2 }]}>
+            {formattedDate}
+          </Text>
         </View>
 
         {/* Middle Row: Category */}
@@ -45,12 +49,18 @@ export default function ExpenseItem({ expense, onDelete }) {
             color={useTheme().theme.primary}
             style={{ marginRight: 8 }}
           />
-          <Text style={[styles.categoryText, {color: useTheme().theme.text2}]}>{expense.category}</Text>
+          <Text
+            style={[styles.categoryText, { color: useTheme().theme.text2 }]}
+          >
+            {expense.category}
+          </Text>
         </View>
 
         {/* Bottom Row: Description */}
         {expense.description ? (
-          <Text style={[styles.description, {color: useTheme().theme.text2}]}>{expense.description}</Text>
+          <Text style={[styles.description, { color: useTheme().theme.text2 }]}>
+            {expense.description}
+          </Text>
         ) : null}
       </View>
     </Swipeable>

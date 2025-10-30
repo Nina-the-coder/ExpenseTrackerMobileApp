@@ -1,4 +1,4 @@
-import React, { use, useContext, useEffect, useState } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import {
   View,
   Text,
@@ -7,85 +7,81 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from "react-native";
-import { AuthContext } from "../context/AuthContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// 1. IMPORT THE NEW HOOK AND CONTEXTS
+import { useExpenseSync } from "./useExpenseSync";
+import { useTheme } from "../context/ThemeContext";
+import { AuthContext } from "../context/AuthContext";
+
+// 2. IMPORT YOUR UI COMPONENTS
 import ExpenseList from "../components/ExpenseList";
 import Summary from "../components/Summary";
 import CategoryFilter from "../components/CategoryFilter";
 import DateRangeFilter from "../components/DateRangeFilter";
 import ToggleTheme from "../components/ToggleTheme";
-import { useTheme } from "../utils/ThemeContext";
-import { loadExpenses, saveExpenses } from "../utils/storage";
 import AddExpense from "../components/AddExpense";
-import { ExpenseContext } from "../context/expenseContext";
+import OnlineIndicator from "../components/OnlineIndicator";
 
-export default function HomeScreen() {
-  const { logoutUser } = useContext(AuthContext);
-  const { expenses, loadExpenses, addNewExpense, removeExpense } =
-    useContext(ExpenseContext);
-  const { theme } = useTheme();
-  const { user } = useContext(AuthContext);
-  const userId = user ? user._id || user.id : null; // Assuming your user object stores the ID as 'id' or '_id'
-  //   const [expenses, setExpenses] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const categories = ["Food", "Transport", "Shopping", "Bills", "Other"];
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedRange, setSelectedRange] = useState("All");
-
-  const temp =
-    selectedCategory === "All"
-      ? expenses
-      : expenses.filter((e) => e.category === selectedCategory);
+const isDateInRange = (dateString, range) => {
+  if (!dateString) return false;
+  const date = new Date(dateString);
+  if (isNaN(date)) return false;
 
   const now = new Date();
-
-  const filteredExpenses = temp.filter((e) => {
-    const date = new Date(e.date);
-    if (selectedRange === "Today") {
+  switch (range) {
+    case "Today":
       return date.toDateString() === now.toDateString();
-    } else if (selectedRange === "This Week") {
+    case "This Week":
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
       return date >= startOfWeek && date <= now;
-    } else if (selectedRange === "This Month") {
+    case "This Month":
       return (
         date.getMonth() === now.getMonth() &&
         date.getFullYear() === now.getFullYear()
       );
-    }
-    return true;
-  });
+    case "All":
+    default:
+      return true;
+  }
+};
 
-  useEffect(() => {
-    (async () => {
-      await loadExpenses();
-    })();
-  }, []);
+export default function HomeScreen() {
+  // 4. GET DATA FROM CONTEXTS
+  const { theme } = useTheme();
+  const { logoutUser } = useContext(AuthContext);
 
-  const handleAdd = async (expense) => {
-    if (!userId) {
-      console.error("User ID is missing. Cannot add expense.");
-      return;
-    }
-    const expenseWithUser = { ...expense, user: userId };
-    try {
-      await addNewExpense(expenseWithUser);
-      setShowForm(false);
-      await loadExpenses();
-    } catch (error) {
-      console.log("Error adding expense:", error);
-      console.error("Failed to add expense:", error.message);
-    }
-  };
+  // 5. GET DATA FROM THE NEW SYNC HOOK
+  const {
+    expenses,
+    isOnline,
+    handleAdd,
+    handleDelete,
+    isLoading, // <-- New value you can use!
+  } = useExpenseSync();
 
-  const handleDelete = async (id) => {
-    try {
-      await removeExpense(id);
-      await loadExpenses();
-    } catch (error) {
-      console.error("Failed to delete expense:", error.message);
-    }
+  // 6. MANAGE ALL UI STATE HERE
+  const [showForm, setShowForm] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedRange, setSelectedRange] = useState("All");
+  const categories = ["Food", "Transport", "Shopping", "Bills", "Other"];
+
+  const filteredExpenses = useMemo(() => {
+    return expenses
+      .filter((exp) => !exp.deleted)
+      .filter((e) => {
+        const categoryMatch =
+          selectedCategory === "All" || e.category === selectedCategory;
+        const dateMatch = isDateInRange(e.date, selectedRange);
+        return categoryMatch && dateMatch;
+      });
+  }, [expenses, selectedCategory, selectedRange]);
+
+  const onFormSubmit = (expenseData) => {
+    handleAdd(expenseData);
+    setShowForm(false);
   };
 
   return (
@@ -93,36 +89,31 @@ export default function HomeScreen() {
       <SafeAreaView
         style={[styles.container, { backgroundColor: theme.background }]}
       >
-        {/* theme toggle button */}
-        <ToggleTheme />
+        {/* TOP CONTROLS */}
+        <View style = {styles.topControls}>
+          {/* <OnlineIndicator isOnline={isOnline} /> */}
+          <ToggleTheme />
+          <TouchableOpacity style={styles.logoutButton} onPress={logoutUser}>
+            <Text style={[styles.btnText, { color: theme.text }]}>Logout</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* logout button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={logoutUser}>
-          <Text style={styles.btnText}>Logout</Text>
-        </TouchableOpacity>
-
-        {/* filter for dateeeee */}
+        {/* FILTERS */}
         <DateRangeFilter
           selectedRange={selectedRange}
           onSelectRange={setSelectedRange}
         />
+        <CategoryFilter
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
 
-        {/* category filter */}
-        <View>
-          <CategoryFilter
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-        </View>
-
-        {/* summary */}
+        {/* DATA DISPLAY */}
         <Summary expenses={filteredExpenses} />
-
-        {/* actual expenses */}
         <ExpenseList expenses={filteredExpenses} onDelete={handleDelete} />
 
-        {/* floating button */}
+        {/* FAB BUTTON */}
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: theme.primary }]}
           onPress={() => setShowForm(true)}
@@ -130,7 +121,7 @@ export default function HomeScreen() {
           <Text style={styles.fabText}>＋</Text>
         </TouchableOpacity>
 
-        {/* add expense modal */}
+        {/* ADD EXPENSE MODAL */}
         <Modal
           visible={showForm}
           onRequestClose={() => setShowForm(false)}
@@ -140,36 +131,48 @@ export default function HomeScreen() {
           <TouchableWithoutFeedback onPress={() => setShowForm(false)}>
             <View style={styles.modalContainer}>
               <TouchableWithoutFeedback>
-                <View style={styles.modalContent}>
-                  <AddExpense onAdd={handleAdd} />
+                <View
+                  style={[
+                    styles.modalContent,
+                    { backgroundColor: theme.background },
+                  ]}
+                >
+                  <AddExpense onAdd={onFormSubmit} />
                 </View>
               </TouchableWithoutFeedback>
             </View>
           </TouchableWithoutFeedback>
         </Modal>
-
-        {/* done */}
       </SafeAreaView>
     </GestureHandlerRootView>
   );
 }
 
+// STYLES (No change)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 20,
   },
+  topControls: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
   logoutButton: {
     width: "30%",
-    maxHeight: 40,
     backgroundColor: "#ff4444",
     padding: 10,
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
-    marginBottom: 10,
-    marginHorizontal: "auto",
+    alignSelf: "center",
+  },
+  btnText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   fab: {
     position: "absolute",
@@ -182,12 +185,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 5,
   },
-  fabText: {
-    color: "#fff",
-    fontSize: 30,
-    fontWeight: "bold",
-    marginBottom: 3,
-  },
+  fabText: { color: "#fff", fontSize: 30, fontWeight: "bold", marginBottom: 3 },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -196,5 +194,7 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: 20,
     borderRadius: 10,
+    alignSelf: "center",
+    width: "90%",
   },
 });

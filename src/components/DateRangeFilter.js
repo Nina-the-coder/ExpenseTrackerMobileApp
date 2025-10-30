@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useTheme } from "../utils/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function DateRangeFilter({ selectedRange, onSelectRange }) {
   const ranges = ["All", "Today", "This Week", "This Month"];
@@ -41,7 +41,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "",
     paddingHorizontal: 10,
-
     marginVertical: 10,
   },
   button: {

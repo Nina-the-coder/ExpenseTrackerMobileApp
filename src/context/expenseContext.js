@@ -1,9 +1,10 @@
+// src/context/expenseContext.js
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { AuthContext } from "./AuthContext";
 import {
-  getExpenses,
-  addExpense,
-  deleteExpense,
+  getExpenses as fetchRemote,
+  addExpense as postRemote,
+  deleteExpense as deleteRemote,
 } from "../utils/expenseService";
 
 export const ExpenseContext = createContext();
@@ -14,40 +15,50 @@ export const ExpenseProvider = ({ children }) => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // When user/token changes, refresh context list from remote (if possible)
   useEffect(() => {
     if (user && token) {
+      // try loading remote and set into context
       loadExpenses();
     } else {
       setExpenses([]);
     }
   }, [user, token]);
 
+  // load remote expenses and update context state
   const loadExpenses = async () => {
+    if (!token) return [];
     setLoading(true);
-    const data = await getExpenses(token);
-    setExpenses(data);
-    setLoading(false);
-  };
-
-  const addNewExpense = async (expense) => {
-    // Guard to prevent service call if token is missing
-    if (!token) throw new Error("Authentication token is missing.");
-
     try {
-      // Your existing logic here, ensuring 'token' is passed to the service function
-      const newExp = await addExpense(token, expense);
-      setExpenses((prev) => [newExp, ...prev]); // ... update state
-    } catch (error) {
-      // ...
+      const data = await fetchRemote(token);
+      // normalize _id to id? We'll keep using _id across app since backend returns _id
+      setExpenses(data || []);
+      setLoading(false);
+      return data || [];
+    } catch (err) {
+      setLoading(false);
+      return [];
     }
   };
 
+  const addNewExpense = async (expense) => {
+    if (!token) throw new Error("Authentication token is missing.");
+    // expense expected to be an object { amount, category, description, date, user }
+    const created = await postRemote(token, expense);
+    console.log("Created expense returned:", created);
+    // server returns created expense with _id — update context state
+    setExpenses((prev) => [created, ...prev]);
+    return created;
+  };
+
   const removeExpense = async (id) => {
-    const cleanId = String(id)
-      .replace(/['":\s]/g, "")
-      .trim();
-    const success = await deleteExpense(token, cleanId);
-    if (success) setExpenses((prev) => prev.filter((e) => e._id !== id));
+    if (!token) throw new Error("Authentication token is missing.");
+    const success = await deleteRemote(token, id);
+    if (success) {
+      setExpenses((prev) => prev.filter((e) => e._id !== id));
+      return true;
+    }
+    return false;
   };
 
   return (

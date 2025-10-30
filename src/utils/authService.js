@@ -1,6 +1,8 @@
+// src/utils/authService.js
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
+
 
 export const signup = async (name, email, password) => {
   try {
@@ -11,21 +13,23 @@ export const signup = async (name, email, password) => {
     });
     return res.data;
   } catch (error) {
+    console.log(error);
     throw error.response?.data?.message || "Signup failed";
   }
 };
-
-// In utils/authService.js
 
 export const login = async (email, password) => {
   try {
     const res = await axios.post(`${API_URL}/auth/login`, { email, password });
 
+    // backend responds with { _id, name, email, token } (or similar)
     const { token, ...userDetails } = res.data;
 
-    await AsyncStorage.setItem("token", token);
-
-    await AsyncStorage.setItem("user", JSON.stringify(userDetails));
+    if (token) {
+      await AsyncStorage.setItem("token", token);
+    }
+    // save user details (without token) so AuthContext can restore user on app start
+    await AsyncStorage.setItem("user", JSON.stringify(userDetails || {}));
 
     return res.data;
   } catch (error) {
@@ -34,15 +38,27 @@ export const login = async (email, password) => {
 };
 
 export const logout = async () => {
-  await AsyncStorage.removeItem("token");
-  await AsyncStorage.removeItem("user"); // ✅ Ensure user data is cleared on logout
+  try {
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("user");
+  } catch (e) {
+    // ignore
+  }
 };
 
 export const getStoredUser = async () => {
-  const userJson = await AsyncStorage.getItem("user");
-  return userJson ? JSON.parse(userJson) : null;
+  try {
+    const userJson = await AsyncStorage.getItem("user");
+    return userJson ? JSON.parse(userJson) : null;
+  } catch (e) {
+    return null;
+  }
 };
 
 export const getToken = async () => {
-  return await AsyncStorage.getItem("token");
+  try {
+    return await AsyncStorage.getItem("token");
+  } catch (e) {
+    return null;
+  }
 };

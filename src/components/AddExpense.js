@@ -7,11 +7,11 @@ import {
   Text,
   useColorScheme,
 } from "react-native";
-import 'react-native-get-random-values';
+import "react-native-get-random-values";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Picker } from "@react-native-picker/picker";
 import { v4 as uuidv4 } from "uuid";
-import { useTheme } from "../utils/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 import { FontAwesome5 } from "@expo/vector-icons";
 
 export default function AddExpense({ onAdd }) {
@@ -47,7 +47,6 @@ export default function AddExpense({ onAdd }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.card }]}>
-
       {/* amount input */}
       <TextInput
         style={[
@@ -90,7 +89,7 @@ export default function AddExpense({ onAdd }) {
         placeholderTextColor={theme.text2}
         value={description}
         onChangeText={setDescription}
-        />
+      />
 
       {/* date input */}
       <TouchableOpacity

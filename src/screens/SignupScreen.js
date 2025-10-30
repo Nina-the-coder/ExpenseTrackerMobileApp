@@ -50,6 +50,7 @@ export default function SignupScreen({ navigation }) {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {success ? <Text style={styles.success}>{success}</Text> : null}
+      
       <TouchableOpacity onPress={handleSignup} style={styles.btn}>
         <Text style={styles.btnText}>Create Account</Text>
       </TouchableOpacity>

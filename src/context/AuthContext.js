@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginUser = (userData) => setUser(userData);
+  
   const logoutUser = async () => {
     await logout();
     setUser(null);

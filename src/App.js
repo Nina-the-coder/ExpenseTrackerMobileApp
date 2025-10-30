@@ -1,8 +1,8 @@
-import { ThemeProvider, useTheme } from "./utils/ThemeContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import AppNavigator from "./navigation/AppNavigator";
 import { ExpenseProvider } from "./context/expenseContext";
-import 'react-native-get-random-values';
+import "react-native-get-random-values";
 
 export default function App() {
   return (
@@ -15,46 +15,6 @@ export default function App() {
     </AuthProvider>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // ✅ Inner component that actually uses useTheme
 // function MainContent() {
