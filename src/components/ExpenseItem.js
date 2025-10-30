@@ -4,13 +4,22 @@ import { Swipeable } from "react-native-gesture-handler";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ExpenseItem({ expense, onDelete }) {
+export default function ExpenseItem({ expense, onDelete  }) {
   const renderRightActions = () => (
     <TouchableOpacity
       style={styles.deleteButton}
       onPress={() => onDelete(expense._id)}
     >
       <Text style={styles.deleteText}>Delete</Text>
+    </TouchableOpacity>
+  );
+
+  const renderLeftActions = () => (
+    <TouchableOpacity
+      style={styles.editButton} // Blue
+      onPress={null} // 👈 new prop
+    >
+      <Text style={styles.editText}>Edit</Text>
     </TouchableOpacity>
   );
 
@@ -29,7 +38,10 @@ export default function ExpenseItem({ expense, onDelete }) {
   };
 
   return (
-    <Swipeable renderRightActions={renderRightActions}>
+    <Swipeable
+      renderRightActions={renderRightActions}
+      renderLeftActions={renderLeftActions}
+    >
       <View style={[styles.card, { backgroundColor: useTheme().theme.card }]}>
         {/* Top Row: Amount and Date */}
         <View style={styles.topRow}>
@@ -114,5 +126,19 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontWeight: "bold",
+    color: "#fff",
+  },
+  editButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    borderRadius: 12,
+    marginVertical: 8,
+    marginLeft: 10,
+    backgroundColor: "#3b82f6",
+  },
+  editText: {
+    fontWeight: "bold",
+    color: "#fff",
   },
 });
