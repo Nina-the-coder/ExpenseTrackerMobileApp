@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useContext } from "react";
+import React, { useState, useMemo, useContext, useEffect } from "react";
 import {
   View,
   Text,
@@ -48,11 +48,13 @@ const isDateInRange = (dateString, range) => {
   }
 };
 
+
+
 export default function HomeScreen() {
   // 4. GET DATA FROM CONTEXTS
   const { theme } = useTheme();
   const { logoutUser } = useContext(AuthContext);
-
+  
   // 5. GET DATA FROM THE NEW SYNC HOOK
   const {
     expenses,
@@ -61,7 +63,7 @@ export default function HomeScreen() {
     handleDelete,
     isLoading, // <-- New value you can use!
   } = useExpenseSync();
-
+  
   // 6. MANAGE ALL UI STATE HERE
   const [showForm, setShowForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -70,21 +72,21 @@ export default function HomeScreen() {
 
   const filteredExpenses = useMemo(() => {
     return expenses
-      .filter((exp) => !exp.deleted)
-      .filter((e) => {
+    .filter((exp) => !exp.deleted)
+    .filter((e) => {
         const categoryMatch =
           selectedCategory === "All" || e.category === selectedCategory;
         const dateMatch = isDateInRange(e.date, selectedRange);
         return categoryMatch && dateMatch;
       });
-  }, [expenses, selectedCategory, selectedRange]);
-
-  const onFormSubmit = (expenseData) => {
-    handleAdd(expenseData);
-    setShowForm(false);
-  };
-
-  return (
+    }, [expenses, selectedCategory, selectedRange]);
+    
+    const onFormSubmit = (expenseData) => {
+      handleAdd(expenseData);
+      setShowForm(false);
+    };
+    
+    return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
         style={[styles.container, { backgroundColor: theme.background }]}
@@ -92,6 +94,7 @@ export default function HomeScreen() {
         {/* TOP CONTROLS */}
         <View style = {styles.topControls}>
           {/* <OnlineIndicator isOnline={isOnline} /> */}
+          <OnlineIndicator isOnline={isOnline} />
           <ToggleTheme />
           <TouchableOpacity style={styles.logoutButton} onPress={logoutUser}>
             <Text style={[styles.btnText, { color: theme.text }]}>Logout</Text>

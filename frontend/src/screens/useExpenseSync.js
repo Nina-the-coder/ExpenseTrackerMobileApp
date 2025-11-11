@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../context/AuthContext";
 import { ExpenseContext } from "../context/expenseContext";
 
-const EXPENSE_KEY = "MY_EXPENSES_v1";
+const getUserExpenseKey = (userId) => `MY_EXPENSES_v1_${userId}`;
 
 const generateLocalId = () => {
   return `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -21,13 +21,13 @@ export const useExpenseSync = () => {
   const userId = user ? user._id || user.id : null;
   const [expenses, setExpenses] = useState([]);
   const [isOnline, setIsOnline] = useState(false);
-  
+
   const isSyncing = useRef(false);
 
-
   const loadLocal = async () => {
+    if (!userId) return [];
     try {
-      const raw = await AsyncStorage.getItem(EXPENSE_KEY);
+      const raw = await AsyncStorage.getItem(getUserExpenseKey(userId));
       return raw ? JSON.parse(raw) : [];
     } catch (e) {
       console.error("Failed to load local expenses", e);
@@ -37,16 +37,17 @@ export const useExpenseSync = () => {
 
   const saveAndSet = async (newExpenseList) => {
     const cleanList = newExpenseList.filter(Boolean);
-    
     setExpenses(cleanList);
-    
+    if (!userId) return;
     try {
-      await AsyncStorage.setItem(EXPENSE_KEY, JSON.stringify(cleanList));
+      await AsyncStorage.setItem(
+        getUserExpenseKey(userId),
+        JSON.stringify(cleanList)
+      );
     } catch (e) {
       console.error("Failed to save local expenses", e);
     }
   };
-
 
   const syncData = async () => {
     if (isSyncing.current || !isOnline || !userId) {
@@ -55,6 +56,7 @@ export const useExpenseSync = () => {
 
     isSyncing.current = true;
     console.log("Sync process STARTED...");
+    console.log(`Syncing expenses for user: ${userId}`);
 
     try {
       let local = await loadLocal();
@@ -68,7 +70,9 @@ export const useExpenseSync = () => {
           const created = await addNewExpense(dataToSend);
 
           local = local.map((localItem) =>
-            localItem._id === item._id ? { ...created, synced: true } : localItem
+            localItem._id === item._id
+              ? { ...created, synced: true }
+              : localItem
           );
         } catch (e) {
           console.error("Failed to sync new item, will retry later", item, e);
@@ -86,9 +90,8 @@ export const useExpenseSync = () => {
 
       const remote = await loadRemote(userId);
       const merged = merge(remote, local);
-      
+
       await saveAndSet(merged);
-      
     } catch (e) {
       console.error("Full sync failed:", e);
     } finally {
@@ -96,23 +99,23 @@ export const useExpenseSync = () => {
       console.log("Sync process FINISHED.");
     }
   };
-  
+
   const merge = (remote = [], local = []) => {
     const map = new Map();
-    remote.forEach(item => map.set(item._id, { ...item, synced: true }));
+    remote.forEach((item) => map.set(item._id, { ...item, synced: true }));
 
-    local.forEach(item => {
+    local.forEach((item) => {
       if (!map.has(item._id)) {
         map.set(item._id, item);
       }
     });
-    
+
     return Array.from(map.values());
   };
 
-
-
   useEffect(() => {
+    if (!userId) return; // wait until user is known
+
     const init = async () => {
       const local = await loadLocal();
       setExpenses(local);
@@ -121,7 +124,17 @@ export const useExpenseSync = () => {
       const online = net.isConnected && net.isInternetReachable;
       setIsOnline(online);
 
-      if (online && userId) {
+      // 🔥 Always load remote once when user logs in
+      try {
+        const remote = await loadRemote(userId);
+        const merged = merge(remote, local);
+        await saveAndSet(merged);
+      } catch (e) {
+        console.error("Initial remote load failed:", e);
+      }
+
+      // 🔥 Sync if online
+      if (online) {
         await syncData();
       }
     };
@@ -131,15 +144,13 @@ export const useExpenseSync = () => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const online = state.isConnected && state.isInternetReachable;
       setIsOnline(online);
-      
       if (online && userId) {
         syncData();
       }
     });
 
     return () => unsubscribe();
-  }, [userId]); 
-
+  }, [userId]);
 
   const handleAdd = async (expenseData) => {
     if (!userId) return;
@@ -155,28 +166,28 @@ export const useExpenseSync = () => {
 
     const updated = [newItem, ...expenses];
     await saveAndSet(updated);
-    
+
     if (isOnline) {
       syncData();
     }
   };
 
   const handleDelete = async (idToDelete) => {
-    const item = expenses.find(exp => exp._id === idToDelete);
+    const item = expenses.find((exp) => exp._id === idToDelete);
     if (!item) return;
-    
+
     let updated;
-    
+
     if (item.synced) {
-      updated = expenses.map(exp =>
+      updated = expenses.map((exp) =>
         exp._id === idToDelete ? { ...exp, deleted: true } : exp
       );
     } else {
-      updated = expenses.filter(exp => exp._id !== idToDelete);
+      updated = expenses.filter((exp) => exp._id !== idToDelete);
     }
 
     await saveAndSet(updated);
-    
+
     if (isOnline) {
       syncData();
     }
