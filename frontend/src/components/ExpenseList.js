@@ -3,7 +3,7 @@ import { FlatList } from "react-native";
 import ExpenseItem from "./ExpenseItem";
 
 export default function ExpenseList({ expenses, onDelete }) {
-  return (
+  return (  
     <FlatList
       data={expenses}
       keyExtractor={(item) => (item._id || item.id).toString()}
