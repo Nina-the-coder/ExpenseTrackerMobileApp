@@ -38,12 +38,12 @@ export const login = async (email, password) => {
   }
 };
 
-export const logout = async () => {
+ export const logout = async () => {
   try {
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
-    // clear local storage on logout
-    await AsyncStorage.clear();
+    // // clear local storage on logout
+    // await AsyncStorage.clear();
     console.log("User logged out and local storage cleared.");
   } catch (e) {
     // ignore

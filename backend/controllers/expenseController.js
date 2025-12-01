@@ -12,22 +12,52 @@ export const getExpenses = async (req, res) => {
 };
 
 export const addExpense = async (req, res) => {
-  const { amount, category, description, date } = req.body;
-  const expense = await Expense.create({
-    user: req.user.id,
-    amount,
-    category,
-    description,
-    date,
-  });
-  res.status(201).json(expense);
+  const {  amount, description, category, date } = req.body;
+  try {
+    const expense = new Expense({
+      user: req.user.id,
+      amount,
+      category,
+      date,
+      description,
+    });
+    await expense.save();
+    res.status(201).json(expense);
+  } catch (err) {
+    res.status(400).json({ message: "Error adding expense" });
+  }
 };
 
 export const deleteExpense = async (req, res) => {
-  const expense = await Expense.findById(req.params.id);
-  if (!expense) return res.status(404).json({ message: "Expense not found" });
-  if (expense.user.toString() !== req.user.id)
-    return res.status(401).json({ message: "Not authorized" });
-  await expense.deleteOne();
-  res.json({ message: "Expense removed" });
+  try{
+    const expense = await Expense.findById(req.params.id);
+    if (!expense) return res.status(404).json({ message: "Expense not found" });
+    if (expense.user.toString() !== req.user.id)
+      return res.status(401).json({ message: "Not authorized" });
+    await expense.deleteOne();
+    res.json({ message: "Expense removed" });
+  }catch(err){
+    console.error("Error deleting expense:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const editExpense = async (req, res) => {
+  const { amount, description, category, date } = req.body;
+  try {
+    const expense = await Expense.findById(req.params.id);
+    if (!expense) return res.status(404).json({ message: "Expense not found" });
+    if (expense.user.toString() !== req.user.id)
+      return res.status(401).json({ message: "Not authorized" });
+
+    expense.amount = amount || expense.amount;
+    expense.description = description || expense.description;
+    expense.category = category || expense.category;
+    expense.date = date || expense.date;
+
+    await expense.save();
+    res.json(expense);
+  } catch (err) {
+    res.status(400).json({ message: "Error updating expense" });
+  }
 };

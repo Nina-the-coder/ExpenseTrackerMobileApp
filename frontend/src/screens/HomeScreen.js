@@ -23,6 +23,7 @@ import DateRangeFilter from "../components/DateRangeFilter";
 import ToggleTheme from "../components/ToggleTheme";
 import AddExpense from "../components/AddExpense";
 import OnlineIndicator from "../components/OnlineIndicator";
+import CustomDatePicker from "../components/CustomDatePicker";
 
 const isDateInRange = (dateString, range) => {
   if (!dateString) return false;
@@ -30,18 +31,25 @@ const isDateInRange = (dateString, range) => {
   if (isNaN(date)) return false;
 
   const now = new Date();
-  switch (range) {
+
+  switch (range.type) {
     case "Today":
       return date.toDateString() === now.toDateString();
+
     case "This Week":
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
       return date >= startOfWeek && date <= now;
+
     case "This Month":
       return (
         date.getMonth() === now.getMonth() &&
         date.getFullYear() === now.getFullYear()
       );
+
+    case "Custom":
+      return date >= new Date(range.start) && date <= new Date(range.end);
+
     case "All":
     default:
       return true;
@@ -49,50 +57,58 @@ const isDateInRange = (dateString, range) => {
 };
 
 
-
 export default function HomeScreen() {
-  // 4. GET DATA FROM CONTEXTS
   const { theme } = useTheme();
   const { logoutUser } = useContext(AuthContext);
-  
-  // 5. GET DATA FROM THE NEW SYNC HOOK
-  const {
-    expenses,
-    isOnline,
-    handleAdd,
-    handleDelete,
-    isLoading, // <-- New value you can use!
-  } = useExpenseSync();
-  
-  // 6. MANAGE ALL UI STATE HERE
+
+  const { expenses, isOnline, handleAdd, handleDelete, handleEdit, isLoading } =
+    useExpenseSync();
+
   const [showForm, setShowForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedRange, setSelectedRange] = useState("All");
+  const [selectedRange, setSelectedRange] = useState({
+    type: "All",
+    start: null,
+    end: null,
+  });
+const [showDatePicker, setShowDatePicker] = useState(false);
   const categories = ["Food", "Transport", "Shopping", "Bills", "Other"];
 
   const filteredExpenses = useMemo(() => {
     return expenses
-    .filter((exp) => !exp.deleted)
-    .filter((e) => {
+      .filter((exp) => !exp.deleted)
+      .filter((e) => {
         const categoryMatch =
           selectedCategory === "All" || e.category === selectedCategory;
         const dateMatch = isDateInRange(e.date, selectedRange);
         return categoryMatch && dateMatch;
       });
-    }, [expenses, selectedCategory, selectedRange]);
-    
-    const onFormSubmit = (expenseData) => {
+  }, [expenses, selectedCategory, selectedRange]);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingExpense(null);
+  };
+
+  const onFormSubmit = (expenseData) => {
+    if (editingExpense) {
+      handleEdit(editingExpense._id, expenseData);
+      setEditingExpense(null);
+    } else {
       handleAdd(expenseData);
-      setShowForm(false);
-    };
-    
-    return (
+    }
+
+    closeForm();
+  };
+
+  return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
         style={[styles.container, { backgroundColor: theme.background }]}
       >
         {/* TOP CONTROLS */}
-        <View style = {styles.topControls}>
+        <View style={styles.topControls}>
           {/* <OnlineIndicator isOnline={isOnline} /> */}
           <OnlineIndicator isOnline={isOnline} />
           <ToggleTheme />
@@ -104,8 +120,15 @@ export default function HomeScreen() {
         {/* FILTERS */}
         <DateRangeFilter
           selectedRange={selectedRange}
-          onSelectRange={setSelectedRange}
+          onSelectRange={(range) => {
+            if (range.type === "Custom") {
+              setShowDatePicker(true);
+            } else {
+              setSelectedRange(range);
+            }
+          }}
         />
+
         <CategoryFilter
           categories={categories}
           selectedCategory={selectedCategory}
@@ -114,7 +137,15 @@ export default function HomeScreen() {
 
         {/* DATA DISPLAY */}
         <Summary expenses={filteredExpenses} />
-        <ExpenseList expenses={filteredExpenses} onDelete={handleDelete} />
+        <ExpenseList
+          expenses={filteredExpenses}
+          onDelete={handleDelete}
+          onEdit={(exp) => {
+            setEditingExpense(exp); // store item being edited
+            setShowForm(true); // open the form
+          }}
+          setShowForm={setShowForm}
+        />
 
         {/* FAB BUTTON */}
         <TouchableOpacity
@@ -124,14 +155,29 @@ export default function HomeScreen() {
           <Text style={styles.fabText}>＋</Text>
         </TouchableOpacity>
 
+        {showDatePicker && (
+          <CustomDatePicker
+            visible={showDatePicker}
+            onClose={() => setShowDatePicker(false)}
+            onApply={(start, end) => {
+              setSelectedRange({
+                type: "Custom",
+                start: start.toISOString(),
+                end: end.toISOString(),
+              });
+              setShowDatePicker(false);
+            }}
+          />
+        )}
+
         {/* ADD EXPENSE MODAL */}
         <Modal
           visible={showForm}
-          onRequestClose={() => setShowForm(false)}
+          onRequestClose={() => closeForm()}
           animationType="fade"
           transparent={true}
         >
-          <TouchableWithoutFeedback onPress={() => setShowForm(false)}>
+          <TouchableWithoutFeedback onPress={() => closeForm()}>
             <View style={styles.modalContainer}>
               <TouchableWithoutFeedback>
                 <View
@@ -140,7 +186,10 @@ export default function HomeScreen() {
                     { backgroundColor: theme.background },
                   ]}
                 >
-                  <AddExpense onAdd={onFormSubmit} />
+                  <AddExpense
+                    onAdd={onFormSubmit}
+                    initialData={editingExpense}
+                  />
                 </View>
               </TouchableWithoutFeedback>
             </View>

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 
 export default function DateRangeFilter({ selectedRange, onSelectRange }) {
-  const ranges = ["All", "Today", "This Week", "This Month"];
+  const ranges = ["All", "Today", "This Week", "This Month", "Custom"];
   const { theme } = useTheme();
 
   return (
@@ -14,12 +14,18 @@ export default function DateRangeFilter({ selectedRange, onSelectRange }) {
           style={[
             styles.button,
             { backgroundColor: theme.card },
-            selectedRange === range && [
+            selectedRange.type === range && [
               styles.selectedButton,
               { backgroundColor: theme.primary },
             ],
           ]}
-          onPress={() => onSelectRange(range)}
+          onPress={() => {
+            if (range === "Custom") {
+              onSelectRange({ type: "Custom", start: null, end: null });
+            } else {
+              onSelectRange({ type: range });
+            }
+          }}
         >
           <Text
             style={[

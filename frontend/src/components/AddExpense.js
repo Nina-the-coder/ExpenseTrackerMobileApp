@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   TextInput,
@@ -14,10 +14,23 @@ import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "../context/ThemeContext";
 import { FontAwesome5 } from "@expo/vector-icons";
 
-export default function AddExpense({ onAdd }) {
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Food");
-  const [description, setDescription] = useState("");
+export default function AddExpense({ onAdd, initialData = null }) {
+  const [amount, setAmount] = useState(initialData?.amount || "");
+  const [category, setCategory] = useState(initialData?.category || "");
+  const [description, setDescription] = useState(
+    initialData?.description || ""
+  );
+
+  // clear the form if initialData is null
+  useEffect(() => {
+    if (!initialData) {
+      setAmount("");
+      setCategory("Food");
+      setDescription("");
+      setDate(new Date());
+    }
+  }, [initialData]);
+  
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { theme } = useTheme();
@@ -129,7 +142,7 @@ export default function AddExpense({ onAdd }) {
             { backgroundColor: theme.primary, color: theme.text },
           ]}
         >
-          Add Expense
+          <Text>{initialData ? "Save Changes" : "Add Expense"}</Text>
         </Text>
       </TouchableOpacity>
     </View>

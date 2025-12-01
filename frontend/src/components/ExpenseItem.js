@@ -4,7 +4,12 @@ import { Swipeable } from "react-native-gesture-handler";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ExpenseItem({ expense, onDelete  }) {
+export default function ExpenseItem({
+  expense,
+  onDelete,
+  onEdit,
+  setShowForm,
+}) {
   const renderRightActions = () => (
     <TouchableOpacity
       style={styles.deleteButton}
@@ -15,10 +20,7 @@ export default function ExpenseItem({ expense, onDelete  }) {
   );
 
   const renderLeftActions = () => (
-    <TouchableOpacity
-      style={styles.editButton} // Blue
-      onPress={null} // 👈 new prop
-    >
+    <TouchableOpacity style={styles.editButton} onPress={() => onEdit(expense)}>
       <Text style={styles.editText}>Edit</Text>
     </TouchableOpacity>
   );
@@ -37,18 +39,20 @@ export default function ExpenseItem({ expense, onDelete  }) {
     Other: "question-circle",
   };
 
+  const theme = useTheme();
+
   return (
     <Swipeable
       renderRightActions={renderRightActions}
       renderLeftActions={renderLeftActions}
     >
-      <View style={[styles.card, { backgroundColor: useTheme().theme.card }]}>
+      <View style={[styles.card, { backgroundColor: theme.theme.card }]}>
         {/* Top Row: Amount and Date */}
         <View style={styles.topRow}>
-          <Text style={[styles.amount, { color: useTheme().theme.text }]}>
+          <Text style={[styles.amount, { color: theme.theme.text }]}>
             ₹{expense.amount}
           </Text>
-          <Text style={[styles.date, { color: useTheme().theme.text2 }]}>
+          <Text style={[styles.date, { color: theme.theme.text2 }]}>
             {formattedDate}
           </Text>
         </View>
@@ -58,19 +62,17 @@ export default function ExpenseItem({ expense, onDelete  }) {
           <FontAwesome5
             name={categoryIcons[expense.category] || "question-circle"}
             size={18}
-            color={useTheme().theme.primary}
+            color={theme.theme.primary}
             style={{ marginRight: 8 }}
           />
-          <Text
-            style={[styles.categoryText, { color: useTheme().theme.text2 }]}
-          >
+          <Text style={[styles.categoryText, { color: theme.theme.text2 }]}>
             {expense.category}
           </Text>
         </View>
 
         {/* Bottom Row: Description */}
         {expense.description ? (
-          <Text style={[styles.description, { color: useTheme().theme.text2 }]}>
+          <Text style={[styles.description, { color: theme.theme.text2 }]}>
             {expense.description}
           </Text>
         ) : null}

@@ -15,6 +15,7 @@ export const useExpenseSync = () => {
   const {
     addNewExpense,
     removeExpense,
+    editExpense,
     loadExpenses: loadRemote,
   } = useContext(ExpenseContext);
 
@@ -63,6 +64,9 @@ export const useExpenseSync = () => {
 
       const toCreate = local.filter((item) => !item.synced && !item.deleted);
       const toDelete = local.filter((item) => item.deleted && item.synced);
+      const toUpdate = local.filter(
+        (item) => item.synced === false && !item.deleted
+      );
 
       for (const item of toCreate) {
         try {
@@ -85,6 +89,19 @@ export const useExpenseSync = () => {
           local = local.filter((localItem) => localItem._id !== item._id);
         } catch (e) {
           console.error("Failed to sync delete, will retry later", item, e);
+        }
+      }
+
+      for (const item of toUpdate) {
+        try {
+          const updated = await editExpense(item._id, item);
+          local = local.map((localItem) =>
+            localItem._id === item._id
+              ? { ...updated, synced: true }
+              : localItem
+          );
+        } catch (e) {
+          console.log("Failed to sync update, will retry later", item);
         }
       }
 
@@ -193,11 +210,38 @@ export const useExpenseSync = () => {
     }
   };
 
+  const handleEdit = async (idToEdit, updatedData) => {
+    const updatedList = expenses.map((exp) =>
+      exp._id === idToEdit
+        ? { ...exp, ...updatedData, synced: false } // keep same ID
+        : exp
+    );
+
+    await saveAndSet(updatedList);
+
+    if (isOnline) {
+      try {
+        // CALL REMOTE UPDATE
+        await editExpense(idToEdit, updatedData);
+
+        // Mark item as synced after successful update
+        const refreshed = updatedList.map((exp) =>
+          exp._id === idToEdit ? { ...exp, synced: true } : exp
+        );
+
+        await saveAndSet(refreshed);
+      } catch (e) {
+        console.log("Remote edit failed, will sync later");
+      }
+    }
+  };
+
   return {
     expenses,
     isOnline,
     handleAdd,
     handleDelete,
+    handleEdit,
     syncData, // You can call this for a "pull-to-refresh"
     isLoading: isSyncing.current, // Let the UI know if a sync is happening
   };

@@ -54,3 +54,19 @@ export const deleteExpense = async (token, id) => {
     return false;
   }
 };
+
+/**
+ * Edit expense remotely — returns updated expense from server
+ */
+export const editExpense = async (token, id, updates) => {
+  try {
+    const res = await axios.put(`${API_URL}/expenses/${id}`, updates, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log("Edited expense:", res.data);
+    return res.data;
+  } catch (err) {
+    console.log("Edit expense error:", err.message || err);
+    throw err;
+  }
+};

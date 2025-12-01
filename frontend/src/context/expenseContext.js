@@ -5,6 +5,7 @@ import {
   getExpenses as fetchRemote,
   addExpense as postRemote,
   deleteExpense as deleteRemote,
+  editExpense as editRemote,
 } from "../utils/expenseService";
 
 export const ExpenseContext = createContext();
@@ -61,9 +62,26 @@ export const ExpenseProvider = ({ children }) => {
     return false;
   };
 
+  const editExpense = async (id, updatedData) => {
+    if (!token) throw new Error("Authentication token is missing.");
+
+    const updated = await editRemote(token, id, updatedData);
+
+    setExpenses((prev) => prev.map((e) => (e._id === id ? updated : e)));
+
+    return updated;
+  };
+
   return (
     <ExpenseContext.Provider
-      value={{ expenses, addNewExpense, removeExpense, loadExpenses, loading }}
+      value={{
+        expenses,
+        addNewExpense,
+        removeExpense,
+        editExpense,
+        loadExpenses,
+        loading,
+      }}
     >
       {children}
     </ExpenseContext.Provider>
