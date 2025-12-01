@@ -27,6 +27,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "API_URL":"http://192.168.0.106:500/api",
       "eas": {
         "projectId": "7153dfcc-40b9-464c-8917-3a939b8b148b"
       }

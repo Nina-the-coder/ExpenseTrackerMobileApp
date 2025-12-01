@@ -17,12 +17,29 @@ export default function SignupScreen({ navigation }) {
 
   const handleSignup = async () => {
     try {
-      const data = await signup(name, email, password);
+      if (!name || !email || !password) {
+        setError("All fields are required.");
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError("Please enter a valid email address.");
+        return;
+      }
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters long.");
+        return;
+      }
+      const data = await signup(name, email.toLowerCase(), password);
       setSuccess("Account created! You can now log in.");
+      // user  naviagate to login after successful signup
+      navigation.navigate("Login");
+
       setError("");
     } catch (err) {
       console.log("Signup error:", err);
-      setError(err);
+      setError(err.message || "Signup failed. Try again.");
+      setSuccess("");
     }
   };
 
@@ -50,7 +67,7 @@ export default function SignupScreen({ navigation }) {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {success ? <Text style={styles.success}>{success}</Text> : null}
-      
+
       <TouchableOpacity onPress={handleSignup} style={styles.btn}>
         <Text style={styles.btnText}>Create Account</Text>
       </TouchableOpacity>

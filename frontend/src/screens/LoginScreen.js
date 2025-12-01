@@ -17,9 +17,10 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     try {
-      const data = await login(email, password);
+      const data = await login(email.toLowerCase(), password);
       loginUser(data);
     } catch (err) {
+      console.log(err);
       setError(err);
     }
   };

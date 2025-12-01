@@ -4,7 +4,6 @@ import { protect } from "../middleware/authmiddleware.js"; // We'll use your JWT
 
 const router = express.Router();
 
-// ✅ Get all expenses for the logged-in user
 router.get("/", protect, async (req, res) => {
   try {
     const expenses = await Expense.find({ user: req.user.id }).sort({ date: -1 });
@@ -14,7 +13,6 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// ✅ Add new expense
 router.post("/", protect, async (req, res) => {
   const {  amount, description, category, date } = req.body;
   try {
@@ -32,7 +30,6 @@ router.post("/", protect, async (req, res) => {
   }
 });
 
-// ✅ Delete expense
 router.delete("/:id", protect, async (req, res) => {
   try {
     const expense = await Expense.findOneAndDelete({ _id: req.params.id, user: req.user.id });
