@@ -9,13 +9,9 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// 1. IMPORT THE NEW HOOK AND CONTEXTS
 import { useExpenseSync } from "./useExpenseSync";
 import { useTheme } from "../context/ThemeContext";
 import { AuthContext } from "../context/AuthContext";
-
-// 2. IMPORT YOUR UI COMPONENTS
 import ExpenseList from "../components/ExpenseList";
 import Summary from "../components/Summary";
 import CategoryFilter from "../components/CategoryFilter";
@@ -24,6 +20,8 @@ import ToggleTheme from "../components/ToggleTheme";
 import AddExpense from "../components/AddExpense";
 import OnlineIndicator from "../components/OnlineIndicator";
 import CustomDatePicker from "../components/CustomDatePicker";
+import SettingsModal from "../components/SettingsModal";
+import { FontAwesome5 } from "@expo/vector-icons";
 
 const isDateInRange = (dateString, range) => {
   if (!dateString) return false;
@@ -56,14 +54,10 @@ const isDateInRange = (dateString, range) => {
   }
 };
 
-
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { logoutUser } = useContext(AuthContext);
-
   const { expenses, isOnline, handleAdd, handleDelete, handleEdit, isLoading } =
     useExpenseSync();
-
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -72,7 +66,8 @@ export default function HomeScreen() {
     start: null,
     end: null,
   });
-const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const categories = ["Food", "Transport", "Shopping", "Bills", "Other"];
 
   const filteredExpenses = useMemo(() => {
@@ -109,13 +104,21 @@ const [showDatePicker, setShowDatePicker] = useState(false);
       >
         {/* TOP CONTROLS */}
         <View style={styles.topControls}>
-          {/* <OnlineIndicator isOnline={isOnline} /> */}
-          <OnlineIndicator isOnline={isOnline} />
-          <ToggleTheme />
-          <TouchableOpacity style={styles.logoutButton} onPress={logoutUser}>
-            <Text style={[styles.btnText, { color: theme.text }]}>Logout</Text>
+          <TouchableOpacity onPress={() => setShowSettings(true)}>
+            <FontAwesome5
+              name={"cog"}
+              size={18}
+              color={theme.primary}
+              style={{ marginRight: 8 }}
+            />
           </TouchableOpacity>
         </View>
+        {showSettings && (
+          <SettingsModal
+            visible={showSettings}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
 
         {/* FILTERS */}
         <DateRangeFilter
@@ -175,17 +178,14 @@ const [showDatePicker, setShowDatePicker] = useState(false);
           visible={showForm}
           onRequestClose={() => closeForm()}
           animationType="fade"
-          transparent={true}
+          transparent={false}
+          backdropColor={theme.card}
         >
+          {/* <Text style={[styles.addExpenseText, {backgroundColor: theme.card}]}>Add Expense</Text> */}
           <TouchableWithoutFeedback onPress={() => closeForm()}>
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer]}>
               <TouchableWithoutFeedback>
-                <View
-                  style={[
-                    styles.modalContent,
-                    { backgroundColor: theme.background },
-                  ]}
-                >
+                <View style={styles.modalContent}>
                   <AddExpense
                     onAdd={onFormSubmit}
                     initialData={editingExpense}
@@ -207,10 +207,11 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   topControls: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
+    marginRight: 10,
     paddingHorizontal: 10,
   },
   logoutButton: {
@@ -248,5 +249,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignSelf: "center",
     width: "90%",
+  },
+  addExpenseText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 15
   },
 });

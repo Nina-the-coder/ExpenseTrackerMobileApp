@@ -46,7 +46,6 @@ export const ExpenseProvider = ({ children }) => {
     if (!token) throw new Error("Authentication token is missing.");
     // expense expected to be an object { amount, category, description, date, user }
     const created = await postRemote(token, expense);
-    console.log("Created expense returned:", created);
     // server returns created expense with _id — update context state
     setExpenses((prev) => [created, ...prev]);
     return created;

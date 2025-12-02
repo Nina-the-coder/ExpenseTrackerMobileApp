@@ -20,7 +20,6 @@ export default function LoginScreen({ navigation }) {
       const data = await login(email.toLowerCase(), password);
       loginUser(data);
     } catch (err) {
-      console.log(err);
       setError(err);
     }
   };

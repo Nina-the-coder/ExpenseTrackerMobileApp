@@ -37,7 +37,6 @@ export default function SignupScreen({ navigation }) {
 
       setError("");
     } catch (err) {
-      console.log("Signup error:", err);
       setError(err.message || "Signup failed. Try again.");
       setSuccess("");
     }

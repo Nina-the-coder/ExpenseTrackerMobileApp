@@ -31,7 +31,7 @@ export default function DateRangeFilter({ selectedRange, onSelectRange }) {
             style={[
               styles.buttonText,
               { color: theme.text },
-              selectedRange === range && styles.selectedButtonText,
+              selectedRange.type === range && styles.selectedButtonText,
             ]}
           >
             {range}

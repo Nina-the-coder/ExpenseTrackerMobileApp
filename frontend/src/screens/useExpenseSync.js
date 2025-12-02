@@ -56,9 +56,6 @@ export const useExpenseSync = () => {
     }
 
     isSyncing.current = true;
-    console.log("Sync process STARTED...");
-    console.log(`Syncing expenses for user: ${userId}`);
-
     try {
       let local = await loadLocal();
 
@@ -113,7 +110,6 @@ export const useExpenseSync = () => {
       console.error("Full sync failed:", e);
     } finally {
       isSyncing.current = false;
-      console.log("Sync process FINISHED.");
     }
   };
 
@@ -231,7 +227,6 @@ export const useExpenseSync = () => {
 
         await saveAndSet(refreshed);
       } catch (e) {
-        console.log("Remote edit failed, will sync later");
       }
     }
   };

@@ -2,11 +2,9 @@ import Expense from "../models/Expense.js";
 
 export const getExpenses = async (req, res) => {
   try{
-    console.log("User ID in getExpenses:", req.user.id);
     const expenses = await Expense.find({ user: req.user.id });
     res.status(200).json(expenses);
   }catch(err){
-    console.error("Error fetching expenses:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -37,7 +35,6 @@ export const deleteExpense = async (req, res) => {
     await expense.deleteOne();
     res.json({ message: "Expense removed" });
   }catch(err){
-    console.error("Error deleting expense:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

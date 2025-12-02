@@ -59,12 +59,12 @@ export default function AddExpense({ onAdd, initialData = null }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.card }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* amount input */}
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.background, color: theme.text },
+          { backgroundColor: theme.card, color: theme.text },
         ]}
         placeholder="Amount"
         placeholderTextColor={theme.text2}
@@ -75,7 +75,7 @@ export default function AddExpense({ onAdd, initialData = null }) {
 
       {/* category selector */}
       <View
-        style={[styles.pickerWrapper, { backgroundColor: theme.background }]}
+        style={[styles.pickerWrapper, { backgroundColor: theme.card }]}
       >
         <Picker
           selectedValue={category}
@@ -96,7 +96,7 @@ export default function AddExpense({ onAdd, initialData = null }) {
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.background, color: theme.text },
+          { backgroundColor: theme.card, color: theme.text },
         ]}
         placeholder="Description"
         placeholderTextColor={theme.text2}
@@ -108,7 +108,7 @@ export default function AddExpense({ onAdd, initialData = null }) {
       <TouchableOpacity
         activeOpacity={0.5}
         onPress={() => setShowDatePicker(true)}
-        style={[styles.dateButton, { backgroundColor: theme.background }]}
+        style={[styles.dateButton, { backgroundColor: theme.card }]}
       >
         <Text style={[styles.dateText, { color: theme.text }]}>
           {date.toLocaleDateString()}
@@ -152,6 +152,7 @@ export default function AddExpense({ onAdd, initialData = null }) {
 const styles = StyleSheet.create({
   container: {
     padding: 30,
+    paddingVertical: 50,
     margin: 10,
     borderRadius: 10,
     elevation: 3,

@@ -7,7 +7,6 @@ const generateToken = (id) => {
 };
 
 export const registerUser = async (req, res) => {
-  console.log("🔥 SIGNUP CONTROLLER REACHED! Request Body:", req.body);
   const { name, email, password } = req.body;
   
   try {
@@ -25,9 +24,7 @@ export const registerUser = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (error) {
-    console.log("signup failed");
     res.status(500).json({ message: error.message, stack: error.stack });
-    console.log(error);
   }
 };
 
