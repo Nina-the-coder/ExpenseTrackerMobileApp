@@ -112,6 +112,7 @@ export default function HomeScreen() {
               style={{ marginRight: 8 }}
             />
           </TouchableOpacity>
+          <OnlineIndicator isOnline={isOnline} />
         </View>
         {showSettings && (
           <SettingsModal

@@ -32,5 +32,9 @@
     "react-native-web": "^0.21.0",
     "uuid": "^13.0.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "babel-plugin-transform-inline-environment-variables": "^0.4.4",
+    "jest-fetch-mock": "^3.0.3"
+  }
 }
