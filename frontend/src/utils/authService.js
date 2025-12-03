@@ -3,6 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
 
+const GUEST_FLAG = "GUEST_MODE";
 
 export const signup = async (name, email, password) => {
   try {
@@ -36,10 +37,39 @@ export const login = async (email, password) => {
   }
 };
 
- export const logout = async () => {
+export const loginAsGuest = async () => {
+  try {
+    await AsyncStorage.setItem(GUEST_FLAG, "true");
+    // Clear authenticated data
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("user");
+  } catch (e) {
+    // ignore
+  }
+};
+
+export const getGuestStatus = async () => {
+  try {
+    const guestMode = await AsyncStorage.getItem(GUEST_FLAG);
+    return guestMode === "true";
+  } catch (e) {
+    return false;
+  }
+};
+
+export const logoutGuest = async () => {
+  try {
+    await AsyncStorage.removeItem(GUEST_FLAG);
+  } catch (e) {
+    // ignore
+  }
+};
+
+export const logout = async () => {
   try {
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
+    await AsyncStorage.removeItem(GUEST_FLAG);
     // // clear local storage on logout
     await AsyncStorage.clear();
   } catch (e) {

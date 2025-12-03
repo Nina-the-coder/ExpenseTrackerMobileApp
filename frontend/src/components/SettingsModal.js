@@ -14,7 +14,7 @@ import { AuthContext } from "../context/AuthContext";
 
 export default function SettingsModal({ visible, onClose }) {
   const { theme, toggleTheme, isDark } = useTheme();
-  const { logoutUser } = useContext(AuthContext);
+  const { logoutUser, isGuest } = useContext(AuthContext);
 
   return (
     <Modal
@@ -37,11 +37,39 @@ export default function SettingsModal({ visible, onClose }) {
                 </TouchableOpacity>
               </View>
 
+              {/* Guest Mode Banner */}
+              {isGuest && (
+                <View
+                  style={[
+                    styles.guestBanner,
+                    { backgroundColor: theme.background },
+                  ]}
+                >
+                  <Ionicons
+                    name="information-circle"
+                    size={20}
+                    color={theme.primary}
+                  />
+                  <Text style={[styles.guestBannerText, { color: theme.text }]}>
+                    You are browsing as a guest. Your data is saved locally.
+                  </Text>
+                </View>
+              )}
+
               {/* Setting Item: Theme */}
               <View style={[styles.row, { borderBottomColor: theme.border }]}>
                 <View style={styles.rowLeft}>
-                  <View style={[styles.iconBox, { backgroundColor: theme.background }]}>
-                    <Ionicons name={isDark ? "moon" : "sunny"} size={20} color={theme.primary} />
+                  <View
+                    style={[
+                      styles.iconBox,
+                      { backgroundColor: theme.background },
+                    ]}
+                  >
+                    <Ionicons
+                      name={isDark ? "moon" : "sunny"}
+                      size={20}
+                      color={theme.primary}
+                    />
                   </View>
                   <Text style={[styles.label, { color: theme.text }]}>
                     Dark Mode
@@ -55,7 +83,7 @@ export default function SettingsModal({ visible, onClose }) {
                 />
               </View>
 
-              {/* Setting Item: Logout */}
+              {/* Logout/Exit Guest Button */}
               <TouchableOpacity
                 style={styles.logoutBtn}
                 onPress={() => {
@@ -63,8 +91,14 @@ export default function SettingsModal({ visible, onClose }) {
                   logoutUser();
                 }}
               >
-                <Text style={styles.logoutText}>Log Out</Text>
-                <Ionicons name="log-out-outline" size={20} color="#ff4444" />
+                <Text style={styles.logoutText}>
+                  {isGuest ? "Exit Guest Mode" : "Log Out"}
+                </Text>
+                <Ionicons
+                  name={isGuest ? "exit-outline" : "log-out-outline"}
+                  size={20}
+                  color="#ff4444"
+                />
               </TouchableOpacity>
             </View>
           </TouchableWithoutFeedback>
@@ -100,6 +134,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
+  },
+  guestBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+    borderLeftWidth: 3,
+  },
+  guestBannerText: {
+    marginLeft: 10,
+    fontSize: 13,
+    flex: 1,
   },
   row: {
     flexDirection: "row",

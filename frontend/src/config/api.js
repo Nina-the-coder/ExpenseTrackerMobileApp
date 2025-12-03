@@ -2,3 +2,6 @@
 // Later when deploying, you can change this to your online server URL
 export const API_URL = "http://192.168.0.106:3000/api"; 
 // export const API_URL = "http://192.168.137.1:5000/api";
+
+// development server
+// export const API_URL = "https://expensetrackermobileapp.onrender.com/api";
