@@ -1,4 +1,3 @@
-import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
 
@@ -6,11 +5,13 @@ const EXP_CACHE_KEY = "expenses";
 
 export const getExpenses = async (token) => {
   try {
-    const res = await axios.get(`${API_URL}/expenses`, {
+    const res = await fetch(`${API_URL}/expenses`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    await AsyncStorage.setItem(EXP_CACHE_KEY, JSON.stringify(res.data || []));
-    return res.data || [];
+    if (!res.ok) throw new Error("Failed to fetch");
+    const data = await res.json();
+    await AsyncStorage.setItem(EXP_CACHE_KEY, JSON.stringify(data || []));
+    return data || [];
   } catch (err) {
     // fallback to local cache if offline or request fails
     const cached = await AsyncStorage.getItem(EXP_CACHE_KEY);
@@ -20,10 +21,16 @@ export const getExpenses = async (token) => {
 
 export const addExpense = async (token, expense) => {
   try {
-    const res = await axios.post(`${API_URL}/expenses`, expense, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await fetch(`${API_URL}/expenses`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(expense),
     });
-    return res.data;
+    if (!res.ok) throw new Error("Failed to add expense");
+    return await res.json();
   } catch (err) {
     throw err;
   }
@@ -31,10 +38,11 @@ export const addExpense = async (token, expense) => {
 
 export const deleteExpense = async (token, id) => {
   try {
-    await axios.delete(`${API_URL}/expenses/${id}`, {
+    const res = await fetch(`${API_URL}/expenses/${id}`, {
+      method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
-    return true;
+    return res.ok;
   } catch (err) {
     return false;
   }
@@ -42,10 +50,16 @@ export const deleteExpense = async (token, id) => {
 
 export const editExpense = async (token, id, updates) => {
   try {
-    const res = await axios.put(`${API_URL}/expenses/${id}`, updates, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await fetch(`${API_URL}/expenses/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(updates),
     });
-    return res.data;
+    if (!res.ok) throw new Error("Failed to update expense");
+    return await res.json();
   } catch (err) {
     throw err;
   }

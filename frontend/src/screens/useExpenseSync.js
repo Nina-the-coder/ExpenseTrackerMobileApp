@@ -213,7 +213,6 @@ export const useExpenseSync = () => {
       user: userId,
       synced: isGuest ? false : false, // Guest mode doesn't sync
       deleted: false,
-      date: new Date().toISOString(),
     };
 
     const updated = [newItem, ...expenses];

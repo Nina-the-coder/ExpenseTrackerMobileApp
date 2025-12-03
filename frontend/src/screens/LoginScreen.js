@@ -16,11 +16,15 @@ export default function LoginScreen({ navigation }) {
   const [error, setError] = useState("");
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      setError("Please enter email and password");
+      return;
+    }
     try {
       const data = await login(email.toLowerCase(), password);
       loginUser(data);
     } catch (err) {
-      setError(err);
+      setError(err || "Login failed. Please try again or continue as guest.");
     }
   };
 

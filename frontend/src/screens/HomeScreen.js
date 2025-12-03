@@ -10,7 +10,7 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useExpenseSync } from "./useExpenseSync";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext"; 
 import { AuthContext } from "../context/AuthContext";
 import ExpenseList from "../components/ExpenseList";
 import Summary from "../components/Summary";
@@ -62,7 +62,7 @@ export default function HomeScreen() {
   const [editingExpense, setEditingExpense] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedRange, setSelectedRange] = useState({
-    type: "All",
+    type: "This Month",
     start: null,
     end: null,
   });
@@ -121,7 +121,7 @@ export default function HomeScreen() {
               name={"cog"}
               size={18}
               color={theme.primary}
-              style={{ marginRight: 8 }}
+              style={styles.settingsIcon}
             />
           </TouchableOpacity>
           <OnlineIndicator isOnline={isOnline} />
@@ -219,7 +219,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 10,
   },
   topControls: {
     flexDirection: "row-reverse",
@@ -228,6 +228,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginRight: 10,
     paddingHorizontal: 10,
+  },
+  settingsIcon: {
+    marginRight: 8,
+    padding: 6,
   },
   logoutButton: {
     width: "30%",

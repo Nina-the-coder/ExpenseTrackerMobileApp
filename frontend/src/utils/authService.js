@@ -1,5 +1,4 @@
 // src/utils/authService.js
-import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
 
@@ -7,40 +6,45 @@ const GUEST_FLAG = "GUEST_MODE";
 
 export const signup = async (name, email, password) => {
   try {
-    const res = await axios.post(`${API_URL}/auth/signup`, {
-      name,
-      email,
-      password,
+    const res = await fetch(`${API_URL}/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
     });
-    return res.data;
+    const data = await res.json();
+    if (!res.ok) throw data.message || "Signup failed";
+    return data;
   } catch (error) {
-    throw error.response?.data?.message || "Signup failed";
+    throw error;
   }
 };
 
 export const login = async (email, password) => {
   try {
-    const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw data.message || "Login failed";
 
-    // backend responds with { _id, name, email, token } (or similar)
-    const { token, ...userDetails } = res.data;
+    const { token, ...userDetails } = data;
 
     if (token) {
       await AsyncStorage.setItem("token", token);
     }
-    // save user details (without token) so AuthContext can restore user on app start
     await AsyncStorage.setItem("user", JSON.stringify(userDetails || {}));
 
-    return res.data;
+    return data;
   } catch (error) {
-    throw error.response?.data?.message || "Login failed";
+    throw error;
   }
 };
 
 export const loginAsGuest = async () => {
   try {
     await AsyncStorage.setItem(GUEST_FLAG, "true");
-    // Clear authenticated data
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
   } catch (e) {
@@ -70,7 +74,6 @@ export const logout = async () => {
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
     await AsyncStorage.removeItem(GUEST_FLAG);
-    // // clear local storage on logout
     await AsyncStorage.clear();
   } catch (e) {
     // ignore
