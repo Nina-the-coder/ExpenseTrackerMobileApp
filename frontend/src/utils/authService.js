@@ -13,7 +13,6 @@ export const signup = async (name, email, password) => {
     });
     return res.data;
   } catch (error) {
-    console.log(error);
     throw error.response?.data?.message || "Signup failed";
   }
 };
@@ -33,18 +32,16 @@ export const login = async (email, password) => {
 
     return res.data;
   } catch (error) {
-    console.log(error);
     throw error.response?.data?.message || "Login failed";
   }
 };
 
-export const logout = async () => {
+ export const logout = async () => {
   try {
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
-    // clear local storage on logout
+    // // clear local storage on logout
     await AsyncStorage.clear();
-    console.log("User logged out and local storage cleared.");
   } catch (e) {
     // ignore
   }

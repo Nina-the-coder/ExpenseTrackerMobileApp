@@ -9,13 +9,9 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// 1. IMPORT THE NEW HOOK AND CONTEXTS
 import { useExpenseSync } from "./useExpenseSync";
 import { useTheme } from "../context/ThemeContext";
 import { AuthContext } from "../context/AuthContext";
-
-// 2. IMPORT YOUR UI COMPONENTS
 import ExpenseList from "../components/ExpenseList";
 import Summary from "../components/Summary";
 import CategoryFilter from "../components/CategoryFilter";
@@ -23,6 +19,9 @@ import DateRangeFilter from "../components/DateRangeFilter";
 import ToggleTheme from "../components/ToggleTheme";
 import AddExpense from "../components/AddExpense";
 import OnlineIndicator from "../components/OnlineIndicator";
+import CustomDatePicker from "../components/CustomDatePicker";
+import SettingsModal from "../components/SettingsModal";
+import { FontAwesome5 } from "@expo/vector-icons";
 
 const isDateInRange = (dateString, range) => {
   if (!dateString) return false;
@@ -30,82 +29,122 @@ const isDateInRange = (dateString, range) => {
   if (isNaN(date)) return false;
 
   const now = new Date();
-  switch (range) {
+
+  switch (range.type) {
     case "Today":
       return date.toDateString() === now.toDateString();
+
     case "This Week":
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
       return date >= startOfWeek && date <= now;
+
     case "This Month":
       return (
         date.getMonth() === now.getMonth() &&
         date.getFullYear() === now.getFullYear()
       );
+
+    case "Custom":
+      return date >= new Date(range.start) && date <= new Date(range.end);
+
     case "All":
     default:
       return true;
   }
 };
 
-
-
 export default function HomeScreen() {
-  // 4. GET DATA FROM CONTEXTS
   const { theme } = useTheme();
-  const { logoutUser } = useContext(AuthContext);
-  
-  // 5. GET DATA FROM THE NEW SYNC HOOK
-  const {
-    expenses,
-    isOnline,
-    handleAdd,
-    handleDelete,
-    isLoading, // <-- New value you can use!
-  } = useExpenseSync();
-  
-  // 6. MANAGE ALL UI STATE HERE
+  const { expenses, isOnline, handleAdd, handleDelete, handleEdit, isLoading, syncData } =
+    useExpenseSync();
   const [showForm, setShowForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedRange, setSelectedRange] = useState("All");
+  const [selectedRange, setSelectedRange] = useState({
+    type: "All",
+    start: null,
+    end: null,
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const categories = ["Food", "Transport", "Shopping", "Bills", "Other"];
 
   const filteredExpenses = useMemo(() => {
     return expenses
-    .filter((exp) => !exp.deleted)
-    .filter((e) => {
+      .filter((exp) => !exp.deleted)
+      .filter((e) => {
         const categoryMatch =
           selectedCategory === "All" || e.category === selectedCategory;
         const dateMatch = isDateInRange(e.date, selectedRange);
         return categoryMatch && dateMatch;
       });
-    }, [expenses, selectedCategory, selectedRange]);
-    
-    const onFormSubmit = (expenseData) => {
+  }, [expenses, selectedCategory, selectedRange]);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingExpense(null);
+  };
+
+  const onFormSubmit = (expenseData) => {
+    if (editingExpense) {
+      handleEdit(editingExpense._id, expenseData);
+      setEditingExpense(null);
+    } else {
       handleAdd(expenseData);
-      setShowForm(false);
-    };
-    
-    return (
+    }
+
+    closeForm();
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await syncData();
+    } catch (e) {
+      console.log("Refresh failed", e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView
         style={[styles.container, { backgroundColor: theme.background }]}
       >
         {/* TOP CONTROLS */}
-        <View style = {styles.topControls}>
-          {/* <OnlineIndicator isOnline={isOnline} /> */}
-          <OnlineIndicator isOnline={isOnline} />
-          <ToggleTheme />
-          <TouchableOpacity style={styles.logoutButton} onPress={logoutUser}>
-            <Text style={[styles.btnText, { color: theme.text }]}>Logout</Text>
+        <View style={styles.topControls}>
+          <TouchableOpacity onPress={() => setShowSettings(true)}>
+            <FontAwesome5
+              name={"cog"}
+              size={18}
+              color={theme.primary}
+              style={{ marginRight: 8 }}
+            />
           </TouchableOpacity>
+          <OnlineIndicator isOnline={isOnline} />
         </View>
+        {showSettings && (
+          <SettingsModal
+            visible={showSettings}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
 
         {/* FILTERS */}
         <DateRangeFilter
           selectedRange={selectedRange}
-          onSelectRange={setSelectedRange}
+          onSelectRange={(range) => {
+            if (range.type === "Custom") {
+              setShowDatePicker(true);
+            } else {
+              setSelectedRange(range);
+            }
+          }}
         />
+
         <CategoryFilter
           categories={categories}
           selectedCategory={selectedCategory}
@@ -114,7 +153,17 @@ export default function HomeScreen() {
 
         {/* DATA DISPLAY */}
         <Summary expenses={filteredExpenses} />
-        <ExpenseList expenses={filteredExpenses} onDelete={handleDelete} />
+        <ExpenseList
+          expenses={filteredExpenses}
+          onDelete={handleDelete}
+          onEdit={(exp) => {
+            setEditingExpense(exp); // store item being edited
+            setShowForm(true); // open the form
+          }}
+          setShowForm={setShowForm}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+        />
 
         {/* FAB BUTTON */}
         <TouchableOpacity
@@ -124,23 +173,38 @@ export default function HomeScreen() {
           <Text style={styles.fabText}>＋</Text>
         </TouchableOpacity>
 
+        {showDatePicker && (
+          <CustomDatePicker
+            visible={showDatePicker}
+            onClose={() => setShowDatePicker(false)}
+            onApply={(start, end) => {
+              setSelectedRange({
+                type: "Custom",
+                start: start.toISOString(),
+                end: end.toISOString(),
+              });
+              setShowDatePicker(false);
+            }}
+          />
+        )}
+
         {/* ADD EXPENSE MODAL */}
         <Modal
           visible={showForm}
-          onRequestClose={() => setShowForm(false)}
+          onRequestClose={() => closeForm()}
           animationType="fade"
-          transparent={true}
+          transparent={false}
+          backdropColor={theme.card}
         >
-          <TouchableWithoutFeedback onPress={() => setShowForm(false)}>
-            <View style={styles.modalContainer}>
+          {/* <Text style={[styles.addExpenseText, {backgroundColor: theme.card}]}>Add Expense</Text> */}
+          <TouchableWithoutFeedback onPress={() => closeForm()}>
+            <View style={[styles.modalContainer]}>
               <TouchableWithoutFeedback>
-                <View
-                  style={[
-                    styles.modalContent,
-                    { backgroundColor: theme.background },
-                  ]}
-                >
-                  <AddExpense onAdd={onFormSubmit} />
+                <View style={styles.modalContent}>
+                  <AddExpense
+                    onAdd={onFormSubmit}
+                    initialData={editingExpense}
+                  />
                 </View>
               </TouchableWithoutFeedback>
             </View>
@@ -158,10 +222,11 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   topControls: {
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
+    marginRight: 10,
     paddingHorizontal: 10,
   },
   logoutButton: {
@@ -199,5 +264,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignSelf: "center",
     width: "90%",
+  },
+  addExpenseText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 15
   },
 });

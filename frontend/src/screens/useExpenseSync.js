@@ -15,6 +15,7 @@ export const useExpenseSync = () => {
   const {
     addNewExpense,
     removeExpense,
+    editExpense,
     loadExpenses: loadRemote,
   } = useContext(ExpenseContext);
 
@@ -23,6 +24,9 @@ export const useExpenseSync = () => {
   const [isOnline, setIsOnline] = useState(false);
 
   const isSyncing = useRef(false);
+
+  // Helper to check if ID is temporary
+  const isLocalId = (id) => String(id).startsWith("local_");
 
   const loadLocal = async () => {
     if (!userId) return [];
@@ -55,39 +59,70 @@ export const useExpenseSync = () => {
     }
 
     isSyncing.current = true;
-    console.log("Sync process STARTED...");
-    console.log(`Syncing expenses for user: ${userId}`);
-
     try {
       let local = await loadLocal();
 
-      const toCreate = local.filter((item) => !item.synced && !item.deleted);
+      // --- FIXED LOGIC START ---
+      
+      // 1. CREATE: Items that are not synced AND have a 'local_' ID
+      const toCreate = local.filter(
+        (item) => !item.synced && !item.deleted && isLocalId(item._id)
+      );
+
+      // 2. DELETE: Items marked deleted
       const toDelete = local.filter((item) => item.deleted && item.synced);
 
+      // 3. UPDATE: Items not synced AND have a REAL Server ID (not 'local_')
+      const toUpdate = local.filter(
+        (item) => 
+          item.synced === false && 
+          !item.deleted && 
+          !isLocalId(item._id) // Crucial check to prevent duplicates
+      );
+      // --- FIXED LOGIC END ---
+
+      // Process Creations
       for (const item of toCreate) {
         try {
           const { _id, synced, ...dataToSend } = item;
           const created = await addNewExpense(dataToSend);
 
+          // Update local ID to server ID
           local = local.map((localItem) =>
             localItem._id === item._id
               ? { ...created, synced: true }
               : localItem
           );
         } catch (e) {
-          console.error("Failed to sync new item, will retry later", item, e);
+          console.error("Failed to sync new item", item, e);
         }
       }
 
+      // Process Deletions
       for (const item of toDelete) {
         try {
           await removeExpense(item._id);
           local = local.filter((localItem) => localItem._id !== item._id);
         } catch (e) {
-          console.error("Failed to sync delete, will retry later", item, e);
+          console.error("Failed to sync delete", item, e);
         }
       }
 
+      // Process Updates
+      for (const item of toUpdate) {
+        try {
+          const updated = await editExpense(item._id, item);
+          local = local.map((localItem) =>
+            localItem._id === item._id
+              ? { ...updated, synced: true }
+              : localItem
+          );
+        } catch (e) {
+          console.log("Failed to sync update", item);
+        }
+      }
+
+      // Final Merge with Remote to ensure consistency
       const remote = await loadRemote(userId);
       const merged = merge(remote, local);
 
@@ -96,16 +131,27 @@ export const useExpenseSync = () => {
       console.error("Full sync failed:", e);
     } finally {
       isSyncing.current = false;
-      console.log("Sync process FINISHED.");
     }
   };
 
   const merge = (remote = [], local = []) => {
     const map = new Map();
+    
+    // 1. Add remote items (source of truth)
     remote.forEach((item) => map.set(item._id, { ...item, synced: true }));
 
+    // 2. Overlay local items (preserves unsynced changes or local IDs)
     local.forEach((item) => {
-      if (!map.has(item._id)) {
+      // If local item has a 'local_' ID, it's new, always keep it
+      if (isLocalId(item._id)) {
+        map.set(item._id, item);
+      } 
+      // If it's a server ID but marked as unsynced (edited offline), keep local version
+      else if (!item.synced) {
+        map.set(item._id, item);
+      }
+      // Otherwise, we prefer the Remote version (already added in step 1)
+      else if (!map.has(item._id)) {
         map.set(item._id, item);
       }
     });
@@ -114,7 +160,7 @@ export const useExpenseSync = () => {
   };
 
   useEffect(() => {
-    if (!userId) return; // wait until user is known
+    if (!userId) return;
 
     const init = async () => {
       const local = await loadLocal();
@@ -124,16 +170,6 @@ export const useExpenseSync = () => {
       const online = net.isConnected && net.isInternetReachable;
       setIsOnline(online);
 
-      // 🔥 Always load remote once when user logs in
-      try {
-        const remote = await loadRemote(userId);
-        const merged = merge(remote, local);
-        await saveAndSet(merged);
-      } catch (e) {
-        console.error("Initial remote load failed:", e);
-      }
-
-      // 🔥 Sync if online
       if (online) {
         await syncData();
       }
@@ -178,7 +214,12 @@ export const useExpenseSync = () => {
 
     let updated;
 
-    if (item.synced) {
+    // If it's a local-only item (never synced), just delete it from array
+    if (isLocalId(idToDelete)) {
+      updated = expenses.filter((exp) => exp._id !== idToDelete);
+    } 
+    // If it exists on server, mark as deleted
+    else if (item.synced) {
       updated = expenses.map((exp) =>
         exp._id === idToDelete ? { ...exp, deleted: true } : exp
       );
@@ -193,12 +234,29 @@ export const useExpenseSync = () => {
     }
   };
 
+  const handleEdit = async (idToEdit, updatedData) => {
+    // 1. Update Local State immediately
+    const updatedList = expenses.map((exp) =>
+      exp._id === idToEdit
+        ? { ...exp, ...updatedData, synced: false } 
+        : exp
+    );
+
+    await saveAndSet(updatedList);
+
+    // 2. Trigger sync (the syncData function handles the logic now)
+    if (isOnline) {
+       syncData();
+    }
+  };
+
   return {
     expenses,
     isOnline,
     handleAdd,
     handleDelete,
-    syncData, // You can call this for a "pull-to-refresh"
-    isLoading: isSyncing.current, // Let the UI know if a sync is happening
+    handleEdit,
+    syncData,
+    isLoading: isSyncing.current,
   };
 };

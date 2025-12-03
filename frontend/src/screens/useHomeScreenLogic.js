@@ -11,6 +11,7 @@ import {
 
 const PENDING_KEY = "PENDING_ACTIONS_v1";
 
+// NOT BEING EXPORTED AS A SCREEN, JUST A LOGIC HOOK
 const useHomeScreenLogic = () => {
   const { logoutUser, user } = useContext(AuthContext);
   const { theme } = useTheme();

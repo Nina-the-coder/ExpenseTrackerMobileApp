@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   TextInput,
@@ -14,10 +14,23 @@ import { v4 as uuidv4 } from "uuid";
 import { useTheme } from "../context/ThemeContext";
 import { FontAwesome5 } from "@expo/vector-icons";
 
-export default function AddExpense({ onAdd }) {
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Food");
-  const [description, setDescription] = useState("");
+export default function AddExpense({ onAdd, initialData = null }) {
+  const [amount, setAmount] = useState(initialData?.amount || "");
+  const [category, setCategory] = useState(initialData?.category || "");
+  const [description, setDescription] = useState(
+    initialData?.description || ""
+  );
+
+  // clear the form if initialData is null
+  useEffect(() => {
+    if (!initialData) {
+      setAmount("");
+      setCategory("Food");
+      setDescription("");
+      setDate(new Date());
+    }
+  }, [initialData]);
+
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { theme } = useTheme();
@@ -46,12 +59,12 @@ export default function AddExpense({ onAdd }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.card }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* amount input */}
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.background, color: theme.text },
+          { backgroundColor: theme.card, color: theme.text },
         ]}
         placeholder="Amount"
         placeholderTextColor={theme.text2}
@@ -61,9 +74,7 @@ export default function AddExpense({ onAdd }) {
       />
 
       {/* category selector */}
-      <View
-        style={[styles.pickerWrapper, { backgroundColor: theme.background }]}
-      >
+      <View style={[styles.pickerWrapper, { backgroundColor: theme.card }]}>
         <Picker
           selectedValue={category}
           style={[styles.picker, { color: theme.text }]}
@@ -83,7 +94,7 @@ export default function AddExpense({ onAdd }) {
       <TextInput
         style={[
           styles.input,
-          { backgroundColor: theme.background, color: theme.text },
+          { backgroundColor: theme.card, color: theme.text },
         ]}
         placeholder="Description"
         placeholderTextColor={theme.text2}
@@ -95,7 +106,7 @@ export default function AddExpense({ onAdd }) {
       <TouchableOpacity
         activeOpacity={0.5}
         onPress={() => setShowDatePicker(true)}
-        style={[styles.dateButton, { backgroundColor: theme.background }]}
+        style={[styles.dateButton, { backgroundColor: theme.card }]}
       >
         <Text style={[styles.dateText, { color: theme.text }]}>
           {date.toLocaleDateString()}
@@ -129,7 +140,7 @@ export default function AddExpense({ onAdd }) {
             { backgroundColor: theme.primary, color: theme.text },
           ]}
         >
-          Add Expense
+          <Text>{initialData ? "Save Changes" : "Add Expense"}</Text>
         </Text>
       </TouchableOpacity>
     </View>
@@ -139,6 +150,7 @@ export default function AddExpense({ onAdd }) {
 const styles = StyleSheet.create({
   container: {
     padding: 30,
+    paddingVertical: 50,
     margin: 10,
     borderRadius: 10,
     elevation: 3,
