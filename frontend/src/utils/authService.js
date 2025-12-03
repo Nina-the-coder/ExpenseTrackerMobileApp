@@ -41,7 +41,7 @@ export const login = async (email, password) => {
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
     // // clear local storage on logout
-    // await AsyncStorage.clear();
+    await AsyncStorage.clear();
   } catch (e) {
     // ignore
   }

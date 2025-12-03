@@ -30,7 +30,7 @@ export default function AddExpense({ onAdd, initialData = null }) {
       setDate(new Date());
     }
   }, [initialData]);
-  
+
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { theme } = useTheme();
@@ -74,9 +74,7 @@ export default function AddExpense({ onAdd, initialData = null }) {
       />
 
       {/* category selector */}
-      <View
-        style={[styles.pickerWrapper, { backgroundColor: theme.card }]}
-      >
+      <View style={[styles.pickerWrapper, { backgroundColor: theme.card }]}>
         <Picker
           selectedValue={category}
           style={[styles.picker, { color: theme.text }]}

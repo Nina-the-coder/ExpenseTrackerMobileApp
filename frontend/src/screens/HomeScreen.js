@@ -56,7 +56,7 @@ const isDateInRange = (dateString, range) => {
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { expenses, isOnline, handleAdd, handleDelete, handleEdit, isLoading } =
+  const { expenses, isOnline, handleAdd, handleDelete, handleEdit, isLoading, syncData } =
     useExpenseSync();
   const [showForm, setShowForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -68,6 +68,7 @@ export default function HomeScreen() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const categories = ["Food", "Transport", "Shopping", "Bills", "Other"];
 
   const filteredExpenses = useMemo(() => {
@@ -95,6 +96,17 @@ export default function HomeScreen() {
     }
 
     closeForm();
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await syncData();
+    } catch (e) {
+      console.log("Refresh failed", e);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -149,6 +161,8 @@ export default function HomeScreen() {
             setShowForm(true); // open the form
           }}
           setShowForm={setShowForm}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
         />
 
         {/* FAB BUTTON */}
