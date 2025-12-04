@@ -4,12 +4,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import { FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
-export default function ExpenseItem({
-  expense,
-  onDelete,
-  onEdit,
-  setShowForm,
-}) {
+function ExpenseItem({ expense, onDelete, onEdit, setShowForm }) {
   const renderRightActions = () => (
     <TouchableOpacity
       style={styles.deleteButton}
@@ -80,6 +75,14 @@ export default function ExpenseItem({
     </Swipeable>
   );
 }
+
+export default React.memo(ExpenseItem, (prev, next) => {
+  return (
+    prev.expense._id === next.expense._id &&
+    prev.expense.amount === next.expense.amount &&
+    prev.expense.date === next.expense.date
+  );
+});
 
 const styles = StyleSheet.create({
   card: {

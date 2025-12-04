@@ -5,13 +5,14 @@ import { AuthContext } from "../context/AuthContext";
 import { ExpenseContext } from "../context/expenseContext";
 
 const getUserExpenseKey = (userId) => `MY_EXPENSES_v1_${userId}`;
+const GUEST_EXPENSE_KEY = "GUEST_EXPENSES_v1";
 
 const generateLocalId = () => {
   return `local_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 };
 
 export const useExpenseSync = () => {
-  const { user } = useContext(AuthContext);
+  const { user, isGuest } = useContext(AuthContext);
   const {
     addNewExpense,
     removeExpense,
@@ -31,7 +32,11 @@ export const useExpenseSync = () => {
   const loadLocal = async () => {
     if (!userId) return [];
     try {
-      const raw = await AsyncStorage.getItem(getUserExpenseKey(userId));
+      // For guest users, use a dedicated storage key
+      const storageKey = isGuest
+        ? GUEST_EXPENSE_KEY
+        : getUserExpenseKey(userId);
+      const raw = await AsyncStorage.getItem(storageKey);
       return raw ? JSON.parse(raw) : [];
     } catch (e) {
       console.error("Failed to load local expenses", e);
@@ -44,16 +49,22 @@ export const useExpenseSync = () => {
     setExpenses(cleanList);
     if (!userId) return;
     try {
-      await AsyncStorage.setItem(
-        getUserExpenseKey(userId),
-        JSON.stringify(cleanList)
-      );
+      // For guest users, use a dedicated storage key
+      const storageKey = isGuest
+        ? GUEST_EXPENSE_KEY
+        : getUserExpenseKey(userId);
+      await AsyncStorage.setItem(storageKey, JSON.stringify(cleanList));
     } catch (e) {
       console.error("Failed to save local expenses", e);
     }
   };
 
   const syncData = async () => {
+    // For guest users, skip sync entirely
+    if (isGuest) {
+      return;
+    }
+
     if (isSyncing.current || !isOnline || !userId) {
       return;
     }
@@ -63,7 +74,7 @@ export const useExpenseSync = () => {
       let local = await loadLocal();
 
       // --- FIXED LOGIC START ---
-      
+
       // 1. CREATE: Items that are not synced AND have a 'local_' ID
       const toCreate = local.filter(
         (item) => !item.synced && !item.deleted && isLocalId(item._id)
@@ -74,10 +85,7 @@ export const useExpenseSync = () => {
 
       // 3. UPDATE: Items not synced AND have a REAL Server ID (not 'local_')
       const toUpdate = local.filter(
-        (item) => 
-          item.synced === false && 
-          !item.deleted && 
-          !isLocalId(item._id) // Crucial check to prevent duplicates
+        (item) => item.synced === false && !item.deleted && !isLocalId(item._id) // Crucial check to prevent duplicates
       );
       // --- FIXED LOGIC END ---
 
@@ -136,7 +144,7 @@ export const useExpenseSync = () => {
 
   const merge = (remote = [], local = []) => {
     const map = new Map();
-    
+
     // 1. Add remote items (source of truth)
     remote.forEach((item) => map.set(item._id, { ...item, synced: true }));
 
@@ -145,7 +153,7 @@ export const useExpenseSync = () => {
       // If local item has a 'local_' ID, it's new, always keep it
       if (isLocalId(item._id)) {
         map.set(item._id, item);
-      } 
+      }
       // If it's a server ID but marked as unsynced (edited offline), keep local version
       else if (!item.synced) {
         map.set(item._id, item);
@@ -166,16 +174,24 @@ export const useExpenseSync = () => {
       const local = await loadLocal();
       setExpenses(local);
 
-      const net = await NetInfo.fetch();
-      const online = net.isConnected && net.isInternetReachable;
-      setIsOnline(online);
+      // For guest users, always consider them offline (no sync needed)
+      if (!isGuest) {
+        const net = await NetInfo.fetch();
+        const online = net.isConnected && net.isInternetReachable;
+        setIsOnline(online);
 
-      if (online) {
-        await syncData();
+        if (online) {
+          await syncData();
+        }
       }
     };
 
     init();
+
+    // Only listen for network changes if not in guest mode
+    if (isGuest) {
+      return;
+    }
 
     const unsubscribe = NetInfo.addEventListener((state) => {
       const online = state.isConnected && state.isInternetReachable;
@@ -186,7 +202,7 @@ export const useExpenseSync = () => {
     });
 
     return () => unsubscribe();
-  }, [userId]);
+  }, [userId, isGuest]);
 
   const handleAdd = async (expenseData) => {
     if (!userId) return;
@@ -195,15 +211,15 @@ export const useExpenseSync = () => {
       ...expenseData,
       _id: generateLocalId(),
       user: userId,
-      synced: false,
+      synced: isGuest ? false : false, // Guest mode doesn't sync
       deleted: false,
-      date: new Date().toISOString(),
     };
 
     const updated = [newItem, ...expenses];
     await saveAndSet(updated);
 
-    if (isOnline) {
+    // Only sync if not guest and online
+    if (!isGuest && isOnline) {
       syncData();
     }
   };
@@ -214,10 +230,14 @@ export const useExpenseSync = () => {
 
     let updated;
 
-    // If it's a local-only item (never synced), just delete it from array
-    if (isLocalId(idToDelete)) {
+    // For guest mode, always just delete immediately
+    if (isGuest) {
       updated = expenses.filter((exp) => exp._id !== idToDelete);
-    } 
+    }
+    // If it's a local-only item (never synced), just delete it from array
+    else if (isLocalId(idToDelete)) {
+      updated = expenses.filter((exp) => exp._id !== idToDelete);
+    }
     // If it exists on server, mark as deleted
     else if (item.synced) {
       updated = expenses.map((exp) =>
@@ -229,7 +249,8 @@ export const useExpenseSync = () => {
 
     await saveAndSet(updated);
 
-    if (isOnline) {
+    // Only sync if not guest and online
+    if (!isGuest && isOnline) {
       syncData();
     }
   };
@@ -238,15 +259,15 @@ export const useExpenseSync = () => {
     // 1. Update Local State immediately
     const updatedList = expenses.map((exp) =>
       exp._id === idToEdit
-        ? { ...exp, ...updatedData, synced: false } 
+        ? { ...exp, ...updatedData, synced: isGuest ? false : false }
         : exp
     );
 
     await saveAndSet(updatedList);
 
-    // 2. Trigger sync (the syncData function handles the logic now)
-    if (isOnline) {
-       syncData();
+    // 2. Trigger sync (only if not guest and online)
+    if (!isGuest && isOnline) {
+      syncData();
     }
   };
 

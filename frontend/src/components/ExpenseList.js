@@ -1,9 +1,9 @@
-import React, { useRef, useEffect } from "react";
-import { FlatList, RefreshControl, Animated, StyleSheet } from "react-native";
+import React, { useCallback } from "react";
+import { FlatList, RefreshControl, StyleSheet } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 import ExpenseItem from "./ExpenseItem";
 
-export default function ExpenseList({
+function ExpenseList({
   expenses,
   onDelete,
   onEdit,
@@ -12,46 +12,29 @@ export default function ExpenseList({
   refreshing,
 }) {
   const { theme } = useTheme();
-  const refreshAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (refreshing) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(refreshAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(refreshAnim, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
-      refreshAnim.setValue(0);
-    }
-  }, [refreshing]);
+  const keyExtractor = useCallback(
+    (item) => (item._id || item.id).toString(),
+    []
+  );
 
-  const rotation = refreshAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+  const renderItem = useCallback(
+    ({ item }) => (
+      <ExpenseItem
+        expense={item}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        setShowForm={setShowForm}
+      />
+    ),
+    [onDelete, onEdit, setShowForm]
+  );
 
   return (
     <FlatList
       data={expenses}
-      keyExtractor={(item) => (item._id || item.id).toString()}
-      renderItem={({ item }) => (
-        <ExpenseItem
-          expense={item}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          setShowForm={setShowForm}
-        />
-      )}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
       refreshControl={
         <RefreshControl
           refreshing={refreshing || false}
@@ -63,6 +46,13 @@ export default function ExpenseList({
         />
       }
       scrollEventThrottle={16}
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={15}
+      updateCellsBatchingPeriod={50}
     />
   );
 }
+
+export default React.memo(ExpenseList);
+
+const styles = StyleSheet.create({});
